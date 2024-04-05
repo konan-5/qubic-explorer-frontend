@@ -74,8 +74,14 @@ function TxPage() {
             </Typography>
           }
         />
-        <SubCardItem title={t('source')} content={<AddressLink value={tx?.sourceId} />} />
-        <SubCardItem title={t('destination')} content={<AddressLink value={tx?.destId} />} />
+        <SubCardItem
+          title={t('source')}
+          content={<AddressLink value={tx?.sourceId} tickValue={tx?.tick} />}
+        />
+        <SubCardItem
+          title={t('destination')}
+          content={<AddressLink value={tx?.destId} tickValue={tx?.tick} />}
+        />
       </div>
     </div>
   );
