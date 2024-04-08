@@ -4,20 +4,14 @@ import { setDefaultSettings } from './fuse/settingsSlice';
 
 export const changeLanguage = (languageId) => (dispatch, getState) => {
   const { direction } = getState().fuse.settings.defaults;
-
   const newLangDirection = i18n.dir(languageId);
 
-  /*
-    If necessary, change theme direction
-     */
   if (newLangDirection !== direction) {
     dispatch(setDefaultSettings({ direction: newLangDirection }));
   }
 
-  /*
-    Change Language
-     */
   return i18n.changeLanguage(languageId).then(() => {
+    localStorage.setItem('lng', languageId);
     dispatch(i18nSlice.actions.languageChanged(languageId));
   });
 };
@@ -25,11 +19,18 @@ export const changeLanguage = (languageId) => (dispatch, getState) => {
 const i18nSlice = createSlice({
   name: 'i18n',
   initialState: {
-    language: i18n.options.lng,
+    language: i18n.options.lng, // Use the saved language from localStorage if available
     languages: [
-      { id: 'en', title: 'English', flag: 'US' },
-      { id: 'tr', title: 'Turkish', flag: 'TR' },
-      { id: 'ar', title: 'Arabic', flag: 'SA' },
+      { id: 'en', title: 'English' },
+      { id: 'de', title: 'Deutsch' },
+      { id: 'es', title: 'Español' },
+      { id: 'fr', title: 'Français' },
+      { id: 'nl', title: 'Nederlands' },
+      { id: 'ru', title: 'Русский' },
+      { id: 'pt', title: 'Português' },
+      { id: 'tr', title: 'Türkçe' },
+      { id: 'cn', title: '中文' },
+      { id: 'jp', title: '日本語' },
     ],
   },
   reducers: {

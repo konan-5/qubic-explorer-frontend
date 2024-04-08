@@ -1,10 +1,12 @@
 import { Typography } from '@mui/material';
 
 import { formatString } from 'src/app/utils/functions';
+import { useTranslation } from 'react-i18next';
 import CardItem from './CardItem';
 
 function TickStatus(props) {
-  const { dataStatus, blockStatus, numberOfTx } = props;
+  const { t } = useTranslation('networkPage');
+  const { dataStatus, tickStatus, numberOfTx } = props;
 
   return (
     <CardItem className="px-24 py-16">
@@ -12,36 +14,36 @@ function TickStatus(props) {
         <div className="flex gap-52">
           <div className="flex flex-col gap-8">
             <Typography className="text-14 leading-20 font-space text-gray-50">
-              Data Status
+              {t('dataStatus')}
             </Typography>
             {dataStatus ? (
               <Typography className="text-16 leading-20 font-space text-success-40">
-                Complete
+                {t('complete')}
               </Typography>
             ) : (
               <Typography className="text-16 leading-20 font-space text-error-40">
-                Incomplete
+                {t('incomplete')}
               </Typography>
             )}
           </div>
           <div className="flex flex-col gap-8">
             <Typography className="text-14 leading-20 font-space text-gray-50">
-              Block Status
+              {t('tickStatus')}
             </Typography>
-            {blockStatus ? (
+            {tickStatus ? (
               <Typography className="text-16 leading-20 font-space text-success-40">
-                Non empty / executed
+                {t('nonEmpty')} / {t('executed')}
               </Typography>
             ) : (
               <Typography className="text-16 leading-20 font-space text-error-40">
-                Empty / unexecuted
+                {t('empty')} / {t('unexecuted')}
               </Typography>
             )}
           </div>
         </div>
         <div className="flex flex-col gap-8">
           <Typography className="text-14 leading-20 font-space text-gray-50">
-            Number of transactions
+            {t('numberOfTransactions')}
           </Typography>
           <Typography className="text-16 leading-20 font-space text-primary-20">
             {formatString(numberOfTx)}
