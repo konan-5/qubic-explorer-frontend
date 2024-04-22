@@ -1,33 +1,66 @@
-import { useEffect } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import InfiniteScroll from 'react-infinite-scroll-component';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { Breadcrumbs, LinearProgress, Typography } from '@mui/material';
 import { formatEllipsis, formatString } from 'src/app/utils/functions';
 import { useTranslation } from 'react-i18next';
-import AddressLink from '../component/AddressLink';
-import TxLink from '../component/TxLink';
-import TxStatus from '../component/TxStatus';
+import TxItem from '../component/TxItem';
+
 import CardItem from '../component/CardItem';
 import TickLink from '../component/TickLink';
-
-import { getAddress, selectAddress, selectAddressLoading } from '../store/addressSlice';
 import HomeLink from '../component/HomeLink';
+import { getAddress, selectAddress, selectAddressLoading } from '../store/addressSlice';
 
 function AddressPage() {
   const { t } = useTranslation('networkPage');
   const routeParams = useParams();
   const { addressId } = routeParams;
-
   const [searchParams] = useSearchParams();
   const tick = searchParams.get('tick');
+  const address = useSelector(selectAddress);
+  const isLoading = useSelector(selectAddressLoading);
+  const [displayTransactions, setDisplayTransactions] = useState([]);
+  const [hasMore, setHasMore] = useState(true);
+  const batchSize = 5;
+  const scrollRef = useRef(null);
   const dispatch = useDispatch();
 
   useEffect(() => {
     dispatch(getAddress(addressId));
   }, [addressId, dispatch]);
 
-  const address = useSelector(selectAddress);
-  const isLoading = useSelector(selectAddressLoading);
+  useEffect(() => {
+    if (address && address.latestTransfers) {
+      setDisplayTransactions(address.latestTransfers.slice(0, batchSize));
+      setHasMore(address.latestTransfers.length > batchSize);
+    }
+  }, [address]);
+
+  const loadMoreTransactions = () => {
+    if (displayTransactions.length < address.latestTransfers.length) {
+      const nextTransactions = address.latestTransfers.slice(
+        displayTransactions.length,
+        displayTransactions.length + batchSize
+      );
+      setDisplayTransactions((prevTransactions) => [...prevTransactions, ...nextTransactions]);
+      setHasMore(displayTransactions.length + batchSize < address.latestTransfers.length);
+    } else {
+      setHasMore(false);
+    }
+  };
+
+  useEffect(() => {
+    const scrollElement = scrollRef.current;
+    const handleScroll = () => {
+      if (scrollElement.scrollTop + scrollElement.clientHeight >= scrollElement.scrollHeight) {
+        console.log('Reached the bottom!');
+      }
+    };
+
+    scrollElement.addEventListener('scroll', handleScroll);
+    return () => scrollElement.removeEventListener('scroll', handleScroll);
+  }, []);
 
   if (isLoading) {
     return (
@@ -38,7 +71,11 @@ function AddressPage() {
   }
 
   return (
-    <div className="w-full">
+    <div
+      className="w-full max-h-[calc(100vh-76px)] overflow-y-auto"
+      id="scrollableDiv"
+      ref={scrollRef}
+    >
       <div className="py-32 max-w-[960px] mx-auto px-12">
         <Breadcrumbs aria-label="breadcrumbs">
           <HomeLink />
@@ -103,55 +140,44 @@ function AddressPage() {
         <Typography className="text-20 leading-26 font-500 font-space mb-16">
           {t('latestTransfers')}
         </Typography>
-        <div className="flex flex-col gap-12">
-          {address &&
-            address?.latestTransfers?.map((item) => (
-              <CardItem className="flex flex-col p-12" key={item.id}>
-                <div className="flex flex-col md:flex-row md:items-center gap-10 md:gap-16 mb-14">
-                  <div className="">
-                    <TxStatus executed={item.executed} />
-                  </div>
-                  <TxLink value={item.id} />
-                </div>
-                <div className="flex flex-col pt-14 border-t-[1px] border-gray-70">
-                  <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-16">
-                    <div className="flex flex-col gap-16">
-                      <div className="flex flex-col gap-8">
-                        <Typography className="text-14 leading-18 font-space text-gray-50">
-                          {t('source')}
-                        </Typography>
-                        <AddressLink value={item.sourceId} tickValue={tick} />
-                      </div>
-                      <div className="flex flex-col gap-8">
-                        <Typography className="text-14 leading-18 font-space text-gray-50">
-                          {t('destination')}
-                        </Typography>
-                        <AddressLink value={item.destId} tickValue={tick} />
-                      </div>
-                    </div>
-                    <div className="flex flex-col sm:flex-row md:flex-col gap-24 pr-24">
-                      <div className="flex flex-col gap-5 md:items-end">
-                        <Typography className="text-14 leading-18 font-space text-gray-50">
-                          {t('type')}
-                        </Typography>
-                        <Typography className="text-14 leading-18 font-space">
-                          {formatString(item.type)} {t('standard')}
-                        </Typography>
-                      </div>
-                      <div className="flex flex-col gap-5 md:items-end">
-                        <Typography className="text-14 leading-18 font-space text-gray-50">
-                          {t('amount')}
-                        </Typography>
-                        <Typography className="text-14 leading-18 font-space">
-                          {formatString(item.amount)} QUBIC
-                        </Typography>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardItem>
+        <InfiniteScroll
+          dataLength={displayTransactions.length}
+          next={loadMoreTransactions}
+          hasMore={hasMore}
+          scrollableTarget="scrollableDiv"
+          loader={
+            <Typography className="text-14 text-primary-50 font-bold py-10 text-center">
+              Loading...
+            </Typography>
+          }
+          endMessage={
+            displayTransactions.length === 0 ? (
+              <Typography className="text-14 font-bold py-10 text-center">
+                There are no transactions
+              </Typography>
+            ) : (
+              <Typography className="text-14 font-bold py-10 text-center">
+                You have seen all transactions
+              </Typography>
+            )
+          }
+        >
+          <div className="flex flex-col gap-12">
+            {displayTransactions.map((item, index) => (
+              <TxItem
+                key={index}
+                executed={item.executed}
+                id={item.id}
+                sourceId={item.sourceId}
+                tick={tick}
+                destId={item.destId}
+                type={item.type}
+                amount={item.amount}
+                data={item.data}
+              />
             ))}
-        </div>
+          </div>
+        </InfiniteScroll>
       </div>
     </div>
   );

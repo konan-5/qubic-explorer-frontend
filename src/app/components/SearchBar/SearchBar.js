@@ -13,6 +13,7 @@ function SearchBar() {
   const isLoading = useSelector(selectSearchLoading);
   const [open, setOpen] = useState(false);
   const [keyword, setKeyword] = useState('');
+  const [addressSearch, setAddressSearch] = useState('');
   const sortedByType = searchResult?.reduce((acc, item) => {
     if (!acc[item.type]) {
       acc[item.type] = [];
@@ -23,17 +24,23 @@ function SearchBar() {
 
   useEffect(() => {
     const timerId = setTimeout(() => {
+      if (keyword.trim().length === 60 && /^[A-Z\s]+$/.test(keyword.trim())) {
+        setAddressSearch(keyword.trim());
+        return;
+      }
+
       if (keyword && keyword.length > 1) {
-        dispatch(getSearch(keyword));
+        dispatch(getSearch(keyword.trim()));
       }
     }, 1000);
     return () => clearTimeout(timerId);
-  }, [keyword]);
+  }, [keyword, dispatch]);
 
   const handleClose = () => {
     setOpen(false);
     dispatch(resetSearch());
     setKeyword('');
+    setAddressSearch('');
   };
 
   return (
@@ -77,7 +84,7 @@ function SearchBar() {
           >
             <Input
               className="max-w-[820px] mx-auto w-full py-12 px-20"
-              placeholder="Search TX, blocks, IDs..."
+              placeholder="Search TX, ticks, IDs..."
               value={keyword}
               disableUnderline
               autoFocus
@@ -92,19 +99,21 @@ function SearchBar() {
               <img className="w-24 h-24" src="assets/icons/xmark.svg" alt="xmark" />
             </IconButton>
           </motion.div>
+          {addressSearch && (
+            <div className="max-h-[320px] overflow-auto max-w-[800px] mx-auto">
+              <ResultItem
+                icon={
+                  <img className="w-16 h-16 mr-6" src="assets/icons/grid-add.svg" alt="address" />
+                }
+                title="Qubic Address"
+                link="/network/address/"
+                address={addressSearch}
+                handleClose={handleClose}
+              />
+            </div>
+          )}
           {sortedByType && (
             <div className="max-h-[320px] overflow-auto max-w-[800px] mx-auto">
-              {sortedByType?.[0]?.length > 0 && (
-                <ResultItem
-                  icon={
-                    <img className="w-16 h-16 mr-6" src="assets/icons/grid-add.svg" alt="address" />
-                  }
-                  title="Qubic Address"
-                  link="/network/address/"
-                  items={sortedByType[0]}
-                  handleClose={handleClose}
-                />
-              )}
               {sortedByType?.[2]?.length > 0 && (
                 <ResultItem
                   icon={
@@ -115,7 +124,7 @@ function SearchBar() {
                     />
                   }
                   title="Tick/Block"
-                  link="/network/block/"
+                  link="/network/tick/"
                   items={sortedByType[2]}
                   handleClose={handleClose}
                 />
